@@ -9,7 +9,8 @@ namespace Fidelity_Card
     {
         private int _age = 0;
         private int _points = 0;
-        static private int _number = 0;
+        static private int _counter = 0;
+        private int _cardNumber;
         const int NUMBER_MAX_CHAR = 10;
 
         // Properties
@@ -17,8 +18,8 @@ namespace Fidelity_Card
         {
             get
             {
-                int length = _number.ToString().Length;
-                string value = _number.ToString();
+                int length = _cardNumber.ToString().Length;
+                string value = _cardNumber.ToString();
                 
                 // Returns a string with fixed number of chars
                 if (length < 10)
@@ -30,7 +31,7 @@ namespace Fidelity_Card
             }
             private set
             {
-                _number = int.Parse(value);
+                _cardNumber = int.Parse(value);
             }
         }
         public string Name { get; set; }
@@ -51,7 +52,7 @@ namespace Fidelity_Card
         public int Points
         {
             get => _points;
-            set
+            private set
             {
                 if (value < 0)
                     throw new Exception("I punti non possono andare in negativo.");
@@ -62,8 +63,8 @@ namespace Fidelity_Card
 
         public Card()
         {
-            _number++;
-            Number = _number.ToString();
+            _counter++;
+            Number = _counter.ToString();
         }
 
 
