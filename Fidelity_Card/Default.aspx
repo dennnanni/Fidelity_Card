@@ -10,6 +10,8 @@
 <body>
     <form id="form1" runat="server">
         <div>
+            <asp:GridView ID="grdMaster" runat="server"></asp:GridView>
+            <asp:GridView ID="grdDetails" runat="server"></asp:GridView>
         </div>
     </form>
 </body>
