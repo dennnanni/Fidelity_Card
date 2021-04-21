@@ -7,11 +7,11 @@ namespace Fidelity_Card
 {
     public class Card
     {
-        private int _age = 0;
+        const int NUMBER_MAX_CHAR = 10;
+        private int _age = 18;
         private int _points = 0;
         static private int _counter = 0;
         private int _cardNumber;
-        const int NUMBER_MAX_CHAR = 10;
 
         // Properties
         public string Number
@@ -60,13 +60,13 @@ namespace Fidelity_Card
                 _points = value;
             }
         }
+        public List<Transaction> Transactions { get; private set; } = new List<Transaction>();
 
         public Card()
         {
             _counter++;
             Number = _counter.ToString();
         }
-
 
         public string VerifyCheckpoint(int checkpoint)
         {
@@ -83,10 +83,23 @@ namespace Fidelity_Card
         public float CalculatePercentage(int checkpoint)
         {
             float percentage = this.Points * 100 / checkpoint;
+
             if (percentage > 100)
                 percentage = 100;
 
             return percentage;
         }
+
+        public void InsertTransaction(double amount, DateTime date)
+        {
+            Transactions.Add(new Transaction(amount, date));
+            Points += (int)amount; 
+        }
+
+        public static void EditStaticCounter()
+        {
+            _counter--;
+        }
+
     }
 }

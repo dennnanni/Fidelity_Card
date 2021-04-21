@@ -33,6 +33,15 @@ namespace Fidelity_Card
         protected global::System.Web.UI.WebControls.GridView grdMaster;
 
         /// <summary>
+        /// Controllo ValidationSummary1.
+        /// </summary>
+        /// <remarks>
+        /// Campo generato automaticamente.
+        /// Per la modifica, spostare la dichiarazione di campo dal file di progettazione al file code-behind.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.ValidationSummary ValidationSummary1;
+
+        /// <summary>
         /// Controllo btnAddCard.
         /// </summary>
         /// <remarks>

@@ -7,10 +7,9 @@ namespace Fidelity_Card
 {
     public class Transaction
     {
-        private float _amount;
+        private double _amount;
 
-        public string CardNumber { get; set; }
-        public float Amount
+        public double Amount
         {
             get => _amount;
             set
@@ -23,5 +22,10 @@ namespace Fidelity_Card
         }
         public DateTime Date { get; set; }
 
+        public Transaction(double amount, DateTime date)
+        {
+            _amount = amount;
+            Date = date;
+        }
     }
 }
