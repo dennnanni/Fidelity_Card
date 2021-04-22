@@ -73,6 +73,7 @@ namespace Fidelity_Card
             }
         }
 
+        #region Master
         private void BindCardsData()
         {
             grdMaster.DataSource = Cards;
@@ -126,11 +127,11 @@ namespace Fidelity_Card
         }
 
         protected void grdMaster_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
-        {
-            //Cards.RemoveAt(Cards.Count - 1);
-            //Card.EditStaticCounter();
-            GridViewRow grdRow = grdMaster.Rows[e.RowIndex];
-
+        { 
+            // Controllare se il numero della card è nella lista e l'oggetto è valorizzato
+            // se lo è non lo si elimina, altrimenti lo si elimina
+            Cards.RemoveAt(Cards.Count - 1);
+            Card.EditStaticCounter();
             grdMaster.EditIndex = -1;
             Session["cards"] = Cards;
             BindCardsData();
@@ -163,6 +164,8 @@ namespace Fidelity_Card
             BindCardsData();
         }
 
+        #endregion
+
         protected void AgeValidator_ServerValidate(object source, ServerValidateEventArgs args)
         {
             CustomValidator custval = new CustomValidator();
@@ -179,5 +182,7 @@ namespace Fidelity_Card
                 args.IsValid = false;
             }
         }
+
+
     }
 }
