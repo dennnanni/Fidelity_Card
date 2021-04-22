@@ -7,25 +7,80 @@ namespace Fidelity_Card
 {
     public class Transaction
     {
-        private double _amount;
+        private int _currentPoints;
 
-        public double Amount
+        public int CurrentPoints
         {
-            get => _amount;
+            get => _currentPoints;
             set
             {
                 if (value <= 0)
                     throw new Exception("La spesa non può essere negativa.");
 
-                _amount = value;
+                _currentPoints = value;
+            }
+        }
+        public double FirstThreshold
+        {
+            get
+            {
+                return CalculatePercentage(100);
+            }
+
+        }
+        public double SecondThreshold { 
+            get
+            {
+                return CalculatePercentage(200);
             }
         }
         public DateTime Date { get; set; }
+        public string Message { get; set; }
 
-        public Transaction(double amount, DateTime date)
+        public Transaction(int amount, DateTime date)
         {
-            _amount = amount;
+            _currentPoints = amount;
             Date = date;
+            Message = VerifyThreshold();
+            
+        }
+
+        public double CalculatePercentage(int checkpoint)
+        {
+            double percentage = (double)_currentPoints * 100 / checkpoint;
+
+            if (percentage > 100)
+                percentage = 100;
+
+            return percentage;
+        }
+
+        private string VerifyThreshold() 
+        { 
+            if(_currentPoints == 0)
+            {
+                return "Buona raccolta";
+            }
+            else if(FirstThreshold < 100)
+            {
+                return $"Mancano ancora {100 - _currentPoints} punti per raggiungere il primo traguardo";
+            }
+            else if (_currentPoints == 100)
+            {
+                return "Complimenti il cliente può ritirare il frullatore";
+            }
+            else if (SecondThreshold < 100)
+            {
+                return $"Mancano ancora {200 - _currentPoints} punti per raggiungere il secondo traguardo";
+            }
+            else if (_currentPoints == 200)
+            {
+                return "Complimenti il cliente può ritirare il Tv color";
+            }
+            else
+            {
+                return "Complimenti il cliente può ritirare il Tv color";
+            }
         }
     }
 }

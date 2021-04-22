@@ -103,7 +103,7 @@ namespace Fidelity_Card
 
         protected void btnAddCard_Click(object sender, EventArgs e)
         {
-            DeleteUpdatingRowOnLostFocus();
+            //DeleteUpdatingRowOnLostFocus();
             Cards.Add(new Card());
             grdMaster.EditIndex = grdMaster.Rows.Count;
             Session["cards"] = Cards;
@@ -114,13 +114,15 @@ namespace Fidelity_Card
 
         protected void grdMaster_SelectedIndexChanged(object sender, EventArgs e)
         {
-            DeleteUpdatingRowOnLostFocus();
+            //DeleteUpdatingRowOnLostFocus();
             BindTransactionData();
         }
 
         protected void grdMaster_RowDeleting(object sender, GridViewDeleteEventArgs e)
         {
-            DeleteUpdatingRowOnLostFocus();
+            //DeleteUpdatingRowOnLostFocus();
+            Cards[e.RowIndex].Transactions.Clear();
+            BindTransactionData();
             Cards.RemoveAt(e.RowIndex);
             Session["cards"] = Cards;
             BindCardsData();
@@ -142,6 +144,8 @@ namespace Fidelity_Card
             int index = e.RowIndex;
             GridViewRow row = grdMaster.Rows[e.RowIndex];
 
+
+
             // Valuates the attributes
             Cards[row.DataItemIndex].Name = ((TextBox)row.Cells[2].Controls[1]).Text;
             Cards[row.DataItemIndex].Surname = ((TextBox)row.Cells[3].Controls[1]).Text;
@@ -159,7 +163,7 @@ namespace Fidelity_Card
 
         protected void grdMaster_RowEditing(object sender, GridViewEditEventArgs e)
         {
-            DeleteUpdatingRowOnLostFocus();
+            //DeleteUpdatingRowOnLostFocus();
             grdMaster.EditIndex = e.NewEditIndex;
             BindCardsData();
         }
@@ -183,6 +187,23 @@ namespace Fidelity_Card
             }
         }
 
+        protected void btnAddTransaction_Click(object sender, EventArgs e)
+        {
+            int selected = grdMaster.SelectedRow.RowIndex;
+            lblError.Text = "";
 
+            if (selected != -1)
+            {
+                double value = 0;
+                if(!double.TryParse(txtAmout.Text, out value) || value <= 0)
+                {
+                    lblError.Text = "Il valore deve essere un numero positivo";
+                    return;
+                }
+
+                Cards[selected].InsertTransaction(value, DateTime.Now);
+                BindTransactionData();
+            }
+        }
     }
 }

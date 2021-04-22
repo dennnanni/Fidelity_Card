@@ -49,17 +49,17 @@ namespace Fidelity_Card
         }
         public string Address { get; set; }
         public string City { get; set; }
-        public int Points
-        {
-            get => _points;
-            private set
-            {
-                if (value < 0)
-                    throw new Exception("I punti non possono andare in negativo.");
+        //public int Points
+        //{
+        //    get => _points;
+        //    private set
+        //    {
+        //        if (value < 0)
+        //            throw new Exception("I punti non possono andare in negativo.");
 
-                _points = value;
-            }
-        }
+        //        _points = value;
+        //    }
+        //}
         public List<Transaction> Transactions { get; private set; } = new List<Transaction>();
 
         public Card()
@@ -70,30 +70,22 @@ namespace Fidelity_Card
 
         public string VerifyCheckpoint(int checkpoint)
         {
-            if(checkpoint - this.Points == 0)
+            if(checkpoint - _points == 0)
             {
                 return $"Complimenti il cliente può ritirare {(Prizes.Prize)checkpoint}";
             }
             else
             {
-                return $"Mancano ancora {(float)checkpoint - this.Points} per poter ritirare {(Prizes.Prize)checkpoint}";
+                return $"Mancano ancora {(float)checkpoint - _points} per poter ritirare {(Prizes.Prize)checkpoint}";
             }
         }
 
-        public float CalculatePercentage(int checkpoint)
-        {
-            float percentage = this.Points * 100 / checkpoint;
-
-            if (percentage > 100)
-                percentage = 100;
-
-            return percentage;
-        }
+        
 
         public void InsertTransaction(double amount, DateTime date)
         {
-            Transactions.Add(new Transaction(amount, date));
-            Points += (int)amount; 
+            _points += (int)amount;
+            Transactions.Add(new Transaction(_points, date));
         }
 
         public static void EditStaticCounter()
