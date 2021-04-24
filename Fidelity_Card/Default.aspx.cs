@@ -9,18 +9,32 @@ namespace Fidelity_Card
 {
     public partial class Default : System.Web.UI.Page
     {
-        private List<Card> Cards { get; set; }
-        private bool _updating = false;
-
-        private int FindCardByNumber(string number)
+        private List<Card> Cards
         {
-            for (int i = 0; i < Cards.Count; i++)
-            {
-                if (Cards[i].Number == number)
-                    return i;
-            }
+            get => (List<Card>)Session["cards"];
 
-            return -1;
+            set
+            {
+                Session["cards"] = value;
+            }
+        }
+
+        private bool IsCreating
+        {
+            get => (bool)Session["creating"];
+            set
+            {
+                Session["creating"] = value;
+            }
+        }
+
+        private bool IsEditing
+        {
+            get => (bool)Session["updating"];
+            set
+            {
+                Session["updating"] = value;
+            }
         }
 
         protected void Page_Load(object sender, EventArgs e)
@@ -59,17 +73,11 @@ namespace Fidelity_Card
                 Cards[0].InsertTransaction(26.2, DateTime.Now);
                 Cards[1].InsertTransaction(50, DateTime.Now);
 
-                Session["cards"] = Cards;
-                Session["updating"] = _updating;
+                IsCreating = false;
+                IsEditing = false;
 
                 // Show cards
                 BindCardsData();
-            }
-            else
-            {
-                // Restore values
-                Cards = (List<Card>)Session["cards"];
-                _updating = (bool)Session["updating"];
             }
         }
 
@@ -80,62 +88,81 @@ namespace Fidelity_Card
             grdMaster.DataBind();
         }
 
-        private void BindTransactionData()
+        private void BindTransactionData(int index)
         {
-            if (grdMaster.SelectedRow.RowIndex != -1)
+            if (index != -1)
             {
-                grdDetails.DataSource = Cards[grdMaster.SelectedRow.RowIndex].Transactions;
+                grdDetails.DataSource = Cards[index].Transactions;
                 grdDetails.DataBind();
             }
         }
 
         /// <summary>
-        /// Verify if there is a row being updating and cancel the edit event
+        /// Check if there is a blank row created and deletes it
         /// </summary>
-        private void DeleteUpdatingRowOnLostFocus()
+        private void DeleteCreatedRowOnLostFocus()
         {
-            if (_updating)
+            if (IsCreating)
+            {
+                Cards.RemoveAt(Cards.Count - 1);
+                Card.EditStaticCounter();
+                grdMaster.EditIndex = -1;
+                IsCreating = false;
+                BindCardsData();
+            }
+        }
+
+        private void CancelEditingOnLostFocus()
+        {
+            if (IsEditing)
             {
                 grdMaster.EditIndex = -1;
-                grdMaster_RowCancelingEdit(null, null);
+                IsEditing = false;
+                BindCardsData();
             }
         }
 
         protected void btnAddCard_Click(object sender, EventArgs e)
         {
-            //DeleteUpdatingRowOnLostFocus();
+            // Undo creating or updating
+            DeleteCreatedRowOnLostFocus();
+            CancelEditingOnLostFocus();
             Cards.Add(new Card());
             grdMaster.EditIndex = grdMaster.Rows.Count;
-            Session["cards"] = Cards;
-            _updating = true;
-            Session["updating"] = _updating;
+            IsCreating = true;
             BindCardsData();
         }
 
         protected void grdMaster_SelectedIndexChanged(object sender, EventArgs e)
         {
-            //DeleteUpdatingRowOnLostFocus();
-            BindTransactionData();
+            // Undo creating or updating
+            DeleteCreatedRowOnLostFocus();
+            CancelEditingOnLostFocus();
+            BindTransactionData(grdMaster.SelectedRow.RowIndex);
         }
 
         protected void grdMaster_RowDeleting(object sender, GridViewDeleteEventArgs e)
         {
-            //DeleteUpdatingRowOnLostFocus();
-            Cards[e.RowIndex].Transactions.Clear();
-            BindTransactionData();
+            // Undo creating or updating
+            DeleteCreatedRowOnLostFocus();
+            CancelEditingOnLostFocus();
+            // Rebinds transactions only if there is something to delete
+            if(Cards[e.RowIndex].Transactions.Count != 0)
+            {
+                Cards[e.RowIndex].Transactions.Clear();
+                BindTransactionData(e.RowIndex);
+            }
             Cards.RemoveAt(e.RowIndex);
-            Session["cards"] = Cards;
             BindCardsData();
         }
 
         protected void grdMaster_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
-        { 
-            // Controllare se il numero della card è nella lista e l'oggetto è valorizzato
-            // se lo è non lo si elimina, altrimenti lo si elimina
-            Cards.RemoveAt(Cards.Count - 1);
-            Card.EditStaticCounter();
+        {
+            // Undo creating or updating
+            DeleteCreatedRowOnLostFocus();
+            CancelEditingOnLostFocus();
             grdMaster.EditIndex = -1;
-            Session["cards"] = Cards;
+            IsCreating = false;
             BindCardsData();
         }
 
@@ -143,8 +170,6 @@ namespace Fidelity_Card
         {
             int index = e.RowIndex;
             GridViewRow row = grdMaster.Rows[e.RowIndex];
-
-
 
             // Valuates the attributes
             Cards[row.DataItemIndex].Name = ((TextBox)row.Cells[2].Controls[1]).Text;
@@ -155,15 +180,16 @@ namespace Fidelity_Card
             Cards[row.DataItemIndex].Age = int.Parse(age);
 
             grdMaster.EditIndex = -1;
-            _updating = false;
-            Session["updating"] = _updating;
-            Session["cards"] = Cards;
+            IsCreating = false;
             BindCardsData();
         }
 
         protected void grdMaster_RowEditing(object sender, GridViewEditEventArgs e)
         {
-            //DeleteUpdatingRowOnLostFocus();
+            // Undo creating or updating
+            DeleteCreatedRowOnLostFocus();
+            CancelEditingOnLostFocus();
+            IsEditing = true;
             grdMaster.EditIndex = e.NewEditIndex;
             BindCardsData();
         }
@@ -189,20 +215,31 @@ namespace Fidelity_Card
 
         protected void btnAddTransaction_Click(object sender, EventArgs e)
         {
+            // Undo creating or updating
+            DeleteCreatedRowOnLostFocus();
+            CancelEditingOnLostFocus();
+
+            if (grdMaster.SelectedRow.RowIndex == -1)
+            {
+                lblError.Text = "Nessuna carta selezionata";
+                return;
+            }
+
             int selected = grdMaster.SelectedRow.RowIndex;
             lblError.Text = "";
 
             if (selected != -1)
             {
                 double value = 0;
-                if(!double.TryParse(txtAmout.Text, out value) || value <= 0)
+                string check = txtAmout.Text.Split(new char[] { '.', ',' })[0];
+                if(!double.TryParse(check, out value) || value <= 0)
                 {
                     lblError.Text = "Il valore deve essere un numero positivo";
                     return;
                 }
 
                 Cards[selected].InsertTransaction(value, DateTime.Now);
-                BindTransactionData();
+                BindTransactionData(selected);
             }
         }
     }
