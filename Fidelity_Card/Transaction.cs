@@ -8,6 +8,8 @@ namespace Fidelity_Card
     public class Transaction
     {
         private int _currentPoints;
+        private static bool _firstThreshold = false;
+        private static bool _secondThreshold = false;
 
         public int CurrentPoints
         {
@@ -65,16 +67,18 @@ namespace Fidelity_Card
             {
                 return $"Mancano ancora {100 - _currentPoints} punti per raggiungere il primo traguardo";
             }
-            else if (_currentPoints == 100)
+            else if (_currentPoints == 100 || !_firstThreshold)
             {
+                _firstThreshold = true;
                 return "Complimenti il cliente può ritirare il frullatore";
             }
             else if (SecondThreshold < 100)
             {
                 return $"Mancano ancora {200 - _currentPoints} punti per raggiungere il secondo traguardo";
             }
-            else if (_currentPoints == 200)
+            else if (_currentPoints == 200 || !_secondThreshold)
             {
+                _secondThreshold = true;
                 return "Complimenti il cliente può ritirare il Tv color";
             }
             else

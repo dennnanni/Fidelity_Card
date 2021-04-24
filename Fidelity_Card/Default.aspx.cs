@@ -242,5 +242,34 @@ namespace Fidelity_Card
                 BindTransactionData(selected);
             }
         }
+
+        protected void btnMultipleDeletion_Click(object sender, EventArgs e)
+        {
+            // Undo creating or updating
+            DeleteCreatedRowOnLostFocus();
+            CancelEditingOnLostFocus();
+
+            int counter = -1;
+            // The counter goes backwards in order to do not slide the indexes every deletion
+            for(int i = Cards.Count - 1 ; i >= 0; i--)
+            {
+                if (((CheckBox)grdMaster.Rows[i].Cells[7].Controls[1]).Checked)
+                {
+                    Cards.RemoveAt(i);
+                    counter++;
+                }
+            }
+
+            if(counter == -1)
+            {
+                ScriptManager.RegisterClientScriptBlock(this, this.GetType(), "AlertBox", "alert('Nessuna card selezionata');", true);
+            }
+            else
+            {
+                BindCardsData();
+                grdDetails.DataSource = null;
+                grdDetails.DataBind();
+            }
+        }
     }
 }

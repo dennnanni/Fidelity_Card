@@ -7,7 +7,7 @@ namespace Fidelity_Card
 {
     public class Card
     {
-        const int NUMBER_MAX_CHAR = 10;
+        const int NUMBER_MAX_CHAR = 5;
         private int _age = 18;
         private int _points = 0;
         static private int _counter = 0;
@@ -24,7 +24,7 @@ namespace Fidelity_Card
                 // Returns a string with fixed number of chars
                 if (length < 10)
                 {
-                    var filler = new string('0', 10 - length);
+                    var filler = new string('0', NUMBER_MAX_CHAR - length);
                     value = filler + value;
                 }
                 return string.Format("{0:x8}", value);
@@ -49,17 +49,6 @@ namespace Fidelity_Card
         }
         public string Address { get; set; }
         public string City { get; set; }
-        //public int Points
-        //{
-        //    get => _points;
-        //    private set
-        //    {
-        //        if (value < 0)
-        //            throw new Exception("I punti non possono andare in negativo.");
-
-        //        _points = value;
-        //    }
-        //}
         public List<Transaction> Transactions { get; private set; } = new List<Transaction>();
 
         public Card()
@@ -67,20 +56,6 @@ namespace Fidelity_Card
             _counter++;
             Number = _counter.ToString();
         }
-
-        public string VerifyCheckpoint(int checkpoint)
-        {
-            if(checkpoint - _points == 0)
-            {
-                return $"Complimenti il cliente può ritirare {(Prizes.Prize)checkpoint}";
-            }
-            else
-            {
-                return $"Mancano ancora {(float)checkpoint - _points} per poter ritirare {(Prizes.Prize)checkpoint}";
-            }
-        }
-
-        
 
         public void InsertTransaction(double amount, DateTime date)
         {
