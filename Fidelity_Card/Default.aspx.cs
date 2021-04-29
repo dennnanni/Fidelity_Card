@@ -4,6 +4,7 @@ using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using System.Data.SqlClient;
 
 namespace Fidelity_Card
 {
@@ -37,10 +38,43 @@ namespace Fidelity_Card
             }
         }
 
+        private void InsertNewCard(SqlConnection connection, string name, string surname, int age, string address, string city)
+        {
+            SqlCommand insert = new SqlCommand(
+                @"INSERT INTO Cards([Name], Surname, Age, [Address], City)
+                VALUES (@[Name], @Surname, @Age, @[Address], @City);", connection);
+
+            insert.Parameters.AddWithValue("@[Name]", name);
+            insert.Parameters.AddWithValue("@Surname", surname);
+            insert.Parameters.AddWithValue("@Age", age);
+            insert.Parameters.AddWithValue("@[Address]", address);
+            insert.Parameters.AddWithValue("@City", city);
+            insert.Parameters.AddWithValue("@City", city);
+
+            int n = insert.ExecuteNonQuery();
+
+        }
+
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!Page.IsPostBack)
             {
+                using (SqlConnection connection = new SqlConnection(
+                    "Data Source=PC1304;User ID=sa;Password=burbero2020;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False"))
+                {
+                    try
+                    {
+                        connection.Open();
+
+                        InsertNewCard(connection, "Luca", "Rossi", 34, "aaaa", "bbb");
+
+                    }
+                    catch(Exception ex)
+                    {
+
+                    }
+                }
+
                 // Creates the lists
                 Cards = new List<Card>();
 
