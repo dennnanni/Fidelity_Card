@@ -35,6 +35,7 @@
                     <asp:TemplateField HeaderText="Age">
                         <EditItemTemplate>
                             <asp:TextBox ID="TextBox3" runat="server" Text='<%# Bind("Age") %>'></asp:TextBox>
+                            <asp:RequiredFieldValidator ID="AgeRequired" runat="server" ErrorMessage="L'età è un campo obbligatorio" Text="*" ControlToValidate="TextBox3"></asp:RequiredFieldValidator>
                             <asp:CustomValidator ID="AgeValidator" runat="server" Text="*" OnServerValidate="AgeValidator_ServerValidate" ErrorMessage="Il cliente deve essere maggiorenne" ControlToValidate="TextBox3"></asp:CustomValidator>
                         </EditItemTemplate>
                         <ItemTemplate>
@@ -96,7 +97,7 @@
             </asp:GridView>
             <asp:TextBox ID="txtAmout" runat="server"></asp:TextBox>
             <asp:Button ID="btnAddTransaction" runat="server" Text="Aggiungi spesa" OnClick="btnAddTransaction_Click" />
-            <asp:Label ID="lblError" runat="server" Text=""></asp:Label>
+            <asp:Label ID="lblError" runat="server" Text="" ForeColor="Red"></asp:Label>
         </div>
     </form>
 </body>

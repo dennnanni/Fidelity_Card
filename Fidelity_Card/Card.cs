@@ -55,6 +55,7 @@ namespace Fidelity_Card
         {
             _counter++;
             Number = _counter.ToString();
+            InsertTransaction(0, DateTime.Now);
         }
 
         public void InsertTransaction(double amount, DateTime date)

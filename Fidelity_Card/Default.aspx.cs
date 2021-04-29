@@ -154,6 +154,8 @@ namespace Fidelity_Card
             }
             Cards.RemoveAt(e.RowIndex);
             BindCardsData();
+            if(grdMaster.SelectedIndex!=-1)
+                BindTransactionData(grdMaster.SelectedIndex);
         }
 
         protected void grdMaster_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
