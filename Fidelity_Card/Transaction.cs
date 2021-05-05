@@ -22,25 +22,27 @@ namespace Fidelity_Card
         }
         public double FirstThreshold
         {
-            get
-            {
-                return CalculatePercentage(100);
-            }
+            get; set;
 
         }
-        public double SecondThreshold { 
-            get
-            {
-                return CalculatePercentage(200);
-            }
+        public double SecondThreshold {
+            get; set;
+
         }
         public DateTime Date { get; set; }
         public string Message { get; set; }
 
-        public Transaction(int amount, DateTime date)
+        public Transaction()
+        {
+
+        }
+
+        public Transaction(int amount, DateTime date) : this()
         {
             _currentPoints = amount;
             Date = date;
+            FirstThreshold = CalculatePercentage(100);
+            SecondThreshold = CalculatePercentage(200);
             Message = VerifyThreshold();
             
         }

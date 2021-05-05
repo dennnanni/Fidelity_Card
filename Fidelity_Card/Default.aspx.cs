@@ -8,6 +8,8 @@ using System.Data.SqlClient;
 
 namespace Fidelity_Card
 {
+    // CARDS UPDATE IS MISSING
+    // TO DO: DELETE AND MULTI DELETION
     public partial class Default : System.Web.UI.Page
     {
         private string ConnectionString
@@ -47,6 +49,7 @@ namespace Fidelity_Card
             }
         }
 
+        #region SQL commands
         private int InsertTransaction(SqlConnection connection, Transaction t, int selected) // Parametri
         {
             SqlCommand insert = new SqlCommand(
@@ -116,11 +119,41 @@ namespace Fidelity_Card
                 );
                 
             }
-
-            
-
             cards.Close();
         }
+
+        private void ReadTransactionData(SqlConnection conn, int index)
+        {
+            SqlCommand selCommand = new SqlCommand(@"SELECT CurrentPoints, FirstThreshold, SecondThreshold, CurrentDate, Message
+                                                    FROM Operation INNER JOIN Card ON Operation.IDCard = Card.IDCard
+                                                    WHERE Operation.IDCard = @Selected;", conn);
+
+            selCommand.Parameters.AddWithValue("@Selected", Cards[index].Number);
+
+            SqlDataReader operations = selCommand.ExecuteReader();
+
+            while (operations.Read())
+            {
+                Cards[index].Transactions.Add(
+                    new Transaction()
+                    {
+                        CurrentPoints = int.Parse(operations["CurrentPoints"].ToString().TrimEnd(null)),
+                        FirstThreshold = double.Parse(operations["FirstThreshold"].ToString().TrimEnd(null)),
+                        SecondThreshold = double.Parse(operations["SecondThreshold"].ToString().TrimEnd(null)),
+                        Date = DateTime.Parse(operations["CurrentDate"].ToString().TrimEnd(null)),
+                        Message = operations["Message"].ToString().TrimEnd(null)
+                    }
+                );
+
+            }
+            operations.Close();
+        }
+
+        private void DeleteCard(SqlConnection conn, string number)
+        {
+            // To do
+        }
+        #endregion
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -162,11 +195,18 @@ namespace Fidelity_Card
                         connection.Open();
                         ReadData(connection);
                         if(Cards.Count > 0)
+                        {
                             Card.EditStaticCounter(Cards[Cards.Count - 1].Counter);
+                            for(int i = 0; i < Cards.Count; i++)
+                            {
+                                ReadTransactionData(connection, i);
+                            }
+                        }
                     }
                 }
                 catch(Exception ex)
                 {
+                    ScriptManager.RegisterClientScriptBlock(this, this.GetType(), "AlertBox", $"alert('{ex.Message}');", true);
                     return;
                 }
 
@@ -285,6 +325,8 @@ namespace Fidelity_Card
                     connection.Open();
                     int i = row.DataItemIndex;
                     InsertNewCard(connection, Cards[i].Number, Cards[i].Name, Cards[i].Surname, Cards[i].Age, Cards[i].Address, Cards[i].City);
+                    Cards[i].Transactions.Add(new Transaction(0, DateTime.Now));
+                    InsertTransaction(connection, Cards[i].Transactions[0], i);
 
                 }
 
@@ -294,7 +336,7 @@ namespace Fidelity_Card
             }
             catch(Exception ex)
             {
-
+                ScriptManager.RegisterClientScriptBlock(this, this.GetType(), "AlertBox", "alert('Errore di connessione');", true);
             }
         }
 
@@ -365,7 +407,7 @@ namespace Fidelity_Card
                 }
                 catch
                 {
-
+                    ScriptManager.RegisterClientScriptBlock(this, this.GetType(), "AlertBox", "alert('Errore di connessione');", true);
                 }
             }
         }
