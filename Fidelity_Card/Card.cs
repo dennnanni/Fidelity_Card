@@ -29,11 +29,17 @@ namespace Fidelity_Card
                 }
                 return string.Format("{0:x8}", value);
             }
-            private set
+            set
             {
                 _cardNumber = int.Parse(value);
             }
         }
+
+        public int Counter
+        {
+            get => _counter;
+        }
+
         public string Name { get; set; }
         public string Surname { get; set; }
         public int Age
@@ -64,9 +70,9 @@ namespace Fidelity_Card
             Transactions.Add(new Transaction(_points, date));
         }
 
-        public static void EditStaticCounter()
+        public static void EditStaticCounter(int value)
         {
-            _counter--;
+            _counter = value;
         }
 
     }

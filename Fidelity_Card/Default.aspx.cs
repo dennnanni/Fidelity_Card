@@ -10,6 +10,15 @@ namespace Fidelity_Card
 {
     public partial class Default : System.Web.UI.Page
     {
+        private string ConnectionString
+        {
+            get => Session["ConnectionString"].ToString();
+            set
+            {
+                Session["ConnectionString"] = value;
+            }
+        }
+
         private List<Card> Cards
         {
             get => (List<Card>)Session["cards"];
@@ -38,74 +47,128 @@ namespace Fidelity_Card
             }
         }
 
-        private void InsertNewCard(SqlConnection connection, string name, string surname, int age, string address, string city)
+        private int InsertTransaction(SqlConnection connection, Transaction t, int selected) // Parametri
         {
             SqlCommand insert = new SqlCommand(
-                @"INSERT INTO Cards([Name], Surname, Age, [Address], City)
-                VALUES (@[Name], @Surname, @Age, @[Address], @City);", connection);
+                @"INSERT INTO Operation
+                VALUES (@Points, @Threshold1, @Threshold2, @Date, @Fk, @Message);", connection);
 
-            insert.Parameters.AddWithValue("@[Name]", name);
+            insert.Parameters.AddWithValue("@Points", t.CurrentPoints);
+            insert.Parameters.AddWithValue("@Threshold1", t.FirstThreshold);
+            insert.Parameters.AddWithValue("@Threshold2", t.SecondThreshold);
+            insert.Parameters.AddWithValue("@Date", t.Date);
+            insert.Parameters.AddWithValue("@Fk", Cards[selected].Number);
+            insert.Parameters.AddWithValue("@Message", t.Message);
+
+            return insert.ExecuteNonQuery();
+        }
+
+        private int InsertNewCard(SqlConnection connection, string idCard, string name, string surname, int age, string address, string city)
+        {
+            SqlCommand insert = new SqlCommand(
+                @"INSERT INTO Card(IDCard, Name, Surname, Age, Address, City)
+                VALUES (@IDCard, @Name, @Surname, @Age, @Address, @City);", connection);
+
+            insert.Parameters.AddWithValue("@IDCard", idCard);
+            insert.Parameters.AddWithValue("@Name", name);
             insert.Parameters.AddWithValue("@Surname", surname);
             insert.Parameters.AddWithValue("@Age", age);
-            insert.Parameters.AddWithValue("@[Address]", address);
-            insert.Parameters.AddWithValue("@City", city);
+            insert.Parameters.AddWithValue("@Address", address);
             insert.Parameters.AddWithValue("@City", city);
 
-            int n = insert.ExecuteNonQuery();
+            return insert.ExecuteNonQuery();
 
+        }
+
+        private int UpdateCard(SqlConnection connection, string name, string surname, int age, string address, string city)
+        {
+            SqlCommand insert = new SqlCommand(
+                @"UPDATE Card
+                SET Name = @Name, Surname = @Surname, Age = @Age, Address = @Address, City = @City;", connection);
+
+            insert.Parameters.AddWithValue("@Name", name);
+            insert.Parameters.AddWithValue("@Surname", surname);
+            insert.Parameters.AddWithValue("@Age", age);
+            insert.Parameters.AddWithValue("@Address", address);
+            insert.Parameters.AddWithValue("@City", city);
+
+            return insert.ExecuteNonQuery();
+        }
+
+        private void ReadData(SqlConnection conn)
+        {
+            SqlCommand selCommand = new SqlCommand("SELECT * FROM Card", conn);
+
+            SqlDataReader cards = selCommand.ExecuteReader();
+
+            while (cards.Read())
+            {
+                Cards.Add(
+                    new Card()
+                    {
+                        Number = cards["IDCard"].ToString().TrimEnd(null),
+                        Name = cards["Name"].ToString().TrimEnd(null),
+                        Surname = cards["Surname"].ToString().TrimEnd(null),
+                        Age = int.Parse(cards["Age"].ToString().TrimEnd(null)),
+                        Address = cards["Address"].ToString().TrimEnd(null),
+                        City = cards["City"].ToString().TrimEnd(null)
+                    }
+                );
+                
+            }
+
+            
+
+            cards.Close();
         }
 
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!Page.IsPostBack)
             {
-                using (SqlConnection connection = new SqlConnection(
-                    "Data Source=PC1304;User ID=sa;Password=burbero2020;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False"))
+                // Tentativo di connessione ad ambedue i database 
+                try
+                {
+
+                    ConnectionString = "Data Source = localhost;Initial Catalog = Fidelity;Integrated Security = True;Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
+                    using (SqlConnection connection = new SqlConnection(ConnectionString))
+                        connection.Open();
+
+                }
+                catch
                 {
                     try
                     {
-                        connection.Open();
-
-                        InsertNewCard(connection, "Luca", "Rossi", 34, "aaaa", "bbb");
-
+                        ConnectionString = "Data Source=PC1304;Initial Catalog = Fidelity;User ID=sa;Password=burbero2020;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False";
+                        using (SqlConnection connection = new SqlConnection(ConnectionString))
+                            connection.Open();
                     }
-                    catch(Exception ex)
+                    catch
                     {
-
+                        ConnectionString = "";
+                        ScriptManager.RegisterClientScriptBlock(this, this.GetType(), "AlertBox", "alert('Impossibile collegarsi al database');", true);
+                        return;
                     }
+                    
                 }
 
                 // Creates the lists
                 Cards = new List<Card>();
 
-                //Some card examples
-                Cards.Add(
-                    new Card()
+                try
+                {
+                    using (SqlConnection connection = new SqlConnection(ConnectionString))
                     {
-                        Name = "Luca",
-                        Surname = "Rossi",
-                        Age = 34,
-                        Address = "Viale Portorico, 10",
-                        City = "Empoli",
-
+                        connection.Open();
+                        ReadData(connection);
+                        if(Cards.Count > 0)
+                            Card.EditStaticCounter(Cards[Cards.Count - 1].Counter);
                     }
-                );
-
-                Cards.Add(
-                    new Card()
-                    {
-                        Name = "Matteo",
-                        Surname = "Brandolini",
-                        Age = 45,
-                        Address = "Via Anna Frank, 58",
-                        City = "Gallipoli"
-                    }
-                );
-
-                Cards[0].InsertTransaction(100, DateTime.Now);
-                Cards[0].InsertTransaction(10, DateTime.Now);
-                Cards[0].InsertTransaction(26.2, DateTime.Now);
-                Cards[1].InsertTransaction(50, DateTime.Now);
+                }
+                catch(Exception ex)
+                {
+                    return;
+                }
 
                 IsCreating = false;
                 IsEditing = false;
@@ -139,7 +202,7 @@ namespace Fidelity_Card
             if (IsCreating)
             {
                 Cards.RemoveAt(Cards.Count - 1);
-                Card.EditStaticCounter();
+                Card.EditStaticCounter(Cards[Cards.Count - 1].Counter - 1);
                 grdMaster.EditIndex = -1;
                 IsCreating = false;
                 BindCardsData();
@@ -215,9 +278,24 @@ namespace Fidelity_Card
             string age = ((TextBox)row.Cells[4].Controls[1]).Text;
             Cards[row.DataItemIndex].Age = int.Parse(age);
 
-            grdMaster.EditIndex = -1;
-            IsCreating = false;
-            BindCardsData();
+            try
+            {
+                using(SqlConnection connection = new SqlConnection(ConnectionString))
+                {
+                    connection.Open();
+                    int i = row.DataItemIndex;
+                    InsertNewCard(connection, Cards[i].Number, Cards[i].Name, Cards[i].Surname, Cards[i].Age, Cards[i].Address, Cards[i].City);
+
+                }
+
+                grdMaster.EditIndex = -1;
+                IsCreating = false;
+                BindCardsData();
+            }
+            catch(Exception ex)
+            {
+
+            }
         }
 
         protected void grdMaster_RowEditing(object sender, GridViewEditEventArgs e)
@@ -266,16 +344,29 @@ namespace Fidelity_Card
 
             if (selected != -1)
             {
-                double value = 0;
-                string check = txtAmout.Text.Split(new char[] { '.', ',' })[0];
-                if(!double.TryParse(check, out value) || value <= 0)
+                try
                 {
-                    lblError.Text = "Il valore deve essere un numero positivo";
-                    return;
-                }
+                    using(SqlConnection connection = new SqlConnection(ConnectionString))
+                    {
+                        connection.Open();
+                        double value = 0;
+                        string check = txtAmout.Text.Split(new char[] { '.', ',' })[0];
+                        if (!double.TryParse(check, out value) || value <= 0)
+                        {
+                            lblError.Text = "Il valore deve essere un numero positivo";
+                            return;
+                        }
+                        
+                        Cards[selected].InsertTransaction(value, DateTime.Now);
+                        InsertTransaction(connection, Cards[selected].Transactions[Cards[selected].Transactions.Count - 1], selected);
 
-                Cards[selected].InsertTransaction(value, DateTime.Now);
-                BindTransactionData(selected);
+                        BindTransactionData(selected);
+                    }
+                }
+                catch
+                {
+
+                }
             }
         }
 
