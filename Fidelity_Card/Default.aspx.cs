@@ -322,6 +322,7 @@ namespace Fidelity_Card
             {
                 using(SqlConnection connection = new SqlConnection(ConnectionString))
                 {
+
                     connection.Open();
                     int i = row.DataItemIndex;
                     InsertNewCard(connection, Cards[i].Number, Cards[i].Name, Cards[i].Surname, Cards[i].Age, Cards[i].Address, Cards[i].City);
@@ -375,7 +376,7 @@ namespace Fidelity_Card
             DeleteCreatedRowOnLostFocus();
             CancelEditingOnLostFocus();
 
-            if (grdMaster.SelectedRow.RowIndex == -1)
+            if (grdMaster.SelectedIndex == -1)
             {
                 lblError.Text = "Nessuna carta selezionata";
                 return;
