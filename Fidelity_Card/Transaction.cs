@@ -14,7 +14,7 @@ namespace Fidelity_Card
             get => _currentPoints;
             set
             {
-                if (value <= 0)
+                if (value < 0)
                     throw new Exception("La spesa non può essere negativa.");
 
                 _currentPoints = value;

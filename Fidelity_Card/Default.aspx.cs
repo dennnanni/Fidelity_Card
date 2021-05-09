@@ -8,8 +8,6 @@ using System.Data.SqlClient;
 
 namespace Fidelity_Card
 {
-    // CARDS UPDATE IS MISSING
-    // TO DO: DELETE AND MULTI DELETION
     public partial class Default : System.Web.UI.Page
     {
         private string ConnectionString
@@ -60,19 +58,18 @@ namespace Fidelity_Card
             insert.Parameters.AddWithValue("@Threshold1", t.FirstThreshold);
             insert.Parameters.AddWithValue("@Threshold2", t.SecondThreshold);
             insert.Parameters.AddWithValue("@Date", t.Date);
-            insert.Parameters.AddWithValue("@Fk", Cards[selected].Number);
+            insert.Parameters.AddWithValue("@Fk", int.Parse(Cards[selected].Number));
             insert.Parameters.AddWithValue("@Message", t.Message);
 
             return insert.ExecuteNonQuery();
         }
 
-        private int InsertNewCard(SqlConnection connection, string idCard, string name, string surname, int age, string address, string city)
+        private int InsertNewCard(SqlConnection connection, string name, string surname, int age, string address, string city)
         {
             SqlCommand insert = new SqlCommand(
-                @"INSERT INTO Card(IDCard, Name, Surname, Age, Address, City)
-                VALUES (@IDCard, @Name, @Surname, @Age, @Address, @City);", connection);
+                @"INSERT INTO Card(Name, Surname, Age, Address, City)
+                VALUES (@Name, @Surname, @Age, @Address, @City);", connection);
 
-            insert.Parameters.AddWithValue("@IDCard", idCard);
             insert.Parameters.AddWithValue("@Name", name);
             insert.Parameters.AddWithValue("@Surname", surname);
             insert.Parameters.AddWithValue("@Age", age);
@@ -83,12 +80,14 @@ namespace Fidelity_Card
 
         }
 
-        private int UpdateCard(SqlConnection connection, string name, string surname, int age, string address, string city)
+        private int UpdateCard(SqlConnection connection, int id, string name, string surname, int age, string address, string city)
         {
             SqlCommand insert = new SqlCommand(
                 @"UPDATE Card
-                SET Name = @Name, Surname = @Surname, Age = @Age, Address = @Address, City = @City;", connection);
+                SET Name = @Name, Surname = @Surname, Age = @Age, Address = @Address, City = @City
+                WHERE IDCard = @ID;", connection);
 
+            insert.Parameters.AddWithValue("@ID", id);
             insert.Parameters.AddWithValue("@Name", name);
             insert.Parameters.AddWithValue("@Surname", surname);
             insert.Parameters.AddWithValue("@Age", age);
@@ -100,9 +99,9 @@ namespace Fidelity_Card
 
         private void ReadData(SqlConnection conn)
         {
-            SqlCommand selCommand = new SqlCommand("SELECT * FROM Card", conn);
+            SqlCommand select = new SqlCommand("SELECT * FROM Card", conn);
 
-            SqlDataReader cards = selCommand.ExecuteReader();
+            SqlDataReader cards = select.ExecuteReader();
 
             while (cards.Read())
             {
@@ -134,6 +133,11 @@ namespace Fidelity_Card
 
             while (operations.Read())
             {
+                if(int.TryParse(operations["CurrentPoints"].ToString().TrimEnd(null), out int cp))
+                {
+                    int oo = cp;
+                }
+
                 Cards[index].Transactions.Add(
                     new Transaction()
                     {
@@ -149,10 +153,28 @@ namespace Fidelity_Card
             operations.Close();
         }
 
-        private void DeleteCard(SqlConnection conn, string number)
+        private void DeleteCard(SqlConnection connection, int number)
         {
-            // To do
+            SqlCommand deleteCard = new SqlCommand("DELETE FROM Card WHERE IDCard = @Number", connection);
+            SqlCommand deleteOp = new SqlCommand("DELETE FROM Operation WHERE IDCard = @Number", connection);
+
+            deleteCard.Parameters.AddWithValue("@Number", number);
+            deleteOp.Parameters.AddWithValue("@Number", number);
+
+            deleteCard.ExecuteNonQuery();
+            deleteOp.ExecuteNonQuery();
         }
+
+        private int GetIdentity(SqlConnection connection)
+        {
+            SqlCommand getIdentity = new SqlCommand("SELECT IDENT_CURRENT('Card');", connection);
+            SqlDataReader ident = getIdentity.ExecuteReader();
+            ident.Read();
+            int id = int.Parse(ident[0].ToString());
+            ident.Close();
+            return id;
+        }
+
         #endregion
 
         protected void Page_Load(object sender, EventArgs e)
@@ -194,9 +216,11 @@ namespace Fidelity_Card
                     {
                         connection.Open();
                         ReadData(connection);
-                        if(Cards.Count > 0)
+                        // Initializes the counter at the last value used (remembers the deleted values, too)
+                        Card.Counter = GetIdentity(connection);
+                        if (Cards.Count > 0)
                         {
-                            Card.EditStaticCounter(Cards[Cards.Count - 1].Counter);
+                            
                             for(int i = 0; i < Cards.Count; i++)
                             {
                                 ReadTransactionData(connection, i);
@@ -242,7 +266,7 @@ namespace Fidelity_Card
             if (IsCreating)
             {
                 Cards.RemoveAt(Cards.Count - 1);
-                Card.EditStaticCounter(Cards[Cards.Count - 1].Counter - 1);
+                Card.Counter -= 1;
                 grdMaster.EditIndex = -1;
                 IsCreating = false;
                 BindCardsData();
@@ -283,15 +307,27 @@ namespace Fidelity_Card
             // Undo creating or updating
             DeleteCreatedRowOnLostFocus();
             CancelEditingOnLostFocus();
-            // Rebinds transactions only if there is something to delete
-            if(Cards[e.RowIndex].Transactions.Count != 0)
+
+            using(SqlConnection connection = new SqlConnection(ConnectionString))
             {
-                Cards[e.RowIndex].Transactions.Clear();
-                BindTransactionData(e.RowIndex);
+                connection.Open();
+
+                // Rebinds transactions only if there is something to delete
+                if (Cards[e.RowIndex].Transactions.Count != 0)
+                {
+                    Cards[e.RowIndex].Transactions.Clear();
+                    BindTransactionData(e.RowIndex);
+                }
+
+                // Deletes the card both from db and the list
+                DeleteCard(connection, int.Parse(Cards[e.RowIndex].Number));
+                Cards.RemoveAt(e.RowIndex);
+                BindCardsData();
+
             }
-            Cards.RemoveAt(e.RowIndex);
-            BindCardsData();
-            if(grdMaster.SelectedIndex!=-1)
+
+            // If there is another row selected, then it rebinds transactions
+            if (grdMaster.SelectedIndex != -1)
                 BindTransactionData(grdMaster.SelectedIndex);
         }
 
@@ -322,13 +358,18 @@ namespace Fidelity_Card
             {
                 using(SqlConnection connection = new SqlConnection(ConnectionString))
                 {
-
                     connection.Open();
                     int i = row.DataItemIndex;
-                    InsertNewCard(connection, Cards[i].Number, Cards[i].Name, Cards[i].Surname, Cards[i].Age, Cards[i].Address, Cards[i].City);
-                    Cards[i].Transactions.Add(new Transaction(0, DateTime.Now));
-                    InsertTransaction(connection, Cards[i].Transactions[0], i);
-
+                    if(int.Parse(Cards[i].Number) > GetIdentity(connection))
+                    {
+                        InsertNewCard(connection, Cards[i].Name, Cards[i].Surname, Cards[i].Age, Cards[i].Address, Cards[i].City);
+                        Cards[i].InsertTransaction(0, DateTime.Now);
+                        InsertTransaction(connection, Cards[i].Transactions[0], i);
+                    }
+                    else
+                    {
+                        UpdateCard(connection, int.Parse(Cards[i].Number), Cards[i].Name, Cards[i].Surname, Cards[i].Age, Cards[i].Address, Cards[i].City);
+                    }
                 }
 
                 grdMaster.EditIndex = -1;
@@ -337,7 +378,7 @@ namespace Fidelity_Card
             }
             catch(Exception ex)
             {
-                ScriptManager.RegisterClientScriptBlock(this, this.GetType(), "AlertBox", "alert('Errore di connessione');", true);
+                ScriptManager.RegisterClientScriptBlock(this, this.GetType(), "AlertBox", $"alert('{ex.Message}');", true);
             }
         }
 
@@ -389,7 +430,7 @@ namespace Fidelity_Card
             {
                 try
                 {
-                    using(SqlConnection connection = new SqlConnection(ConnectionString))
+                    using (SqlConnection connection = new SqlConnection(ConnectionString))
                     {
                         connection.Open();
                         double value = 0;
@@ -399,16 +440,16 @@ namespace Fidelity_Card
                             lblError.Text = "Il valore deve essere un numero positivo";
                             return;
                         }
-                        
+
                         Cards[selected].InsertTransaction(value, DateTime.Now);
                         InsertTransaction(connection, Cards[selected].Transactions[Cards[selected].Transactions.Count - 1], selected);
 
                         BindTransactionData(selected);
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    ScriptManager.RegisterClientScriptBlock(this, this.GetType(), "AlertBox", "alert('Errore di connessione');", true);
+                    ScriptManager.RegisterClientScriptBlock(this, this.GetType(), "AlertBox", $"alert('{ex.Message}');", true);
                 }
             }
         }
@@ -418,15 +459,20 @@ namespace Fidelity_Card
             // Undo creating or updating
             DeleteCreatedRowOnLostFocus();
             CancelEditingOnLostFocus();
-
             int counter = -1;
-            // The counter goes backwards in order to do not slide the indexes every deletion
-            for(int i = Cards.Count - 1 ; i >= 0; i--)
+
+            using (SqlConnection connection = new SqlConnection(ConnectionString))
             {
-                if (((CheckBox)grdMaster.Rows[i].Cells[7].Controls[1]).Checked)
+                connection.Open();
+                // The counter goes backwards in order to do not slide the indexes every deletion
+                for (int i = Cards.Count - 1; i >= 0; i--)
                 {
-                    Cards.RemoveAt(i);
-                    counter++;
+                    if (((CheckBox)grdMaster.Rows[i].Cells[7].Controls[1]).Checked)
+                    {
+                        DeleteCard(connection, int.Parse(Cards[i].Number));
+                        Cards.RemoveAt(i);
+                        counter++;
+                    }
                 }
             }
 

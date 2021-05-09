@@ -10,7 +10,6 @@ namespace Fidelity_Card
         const int NUMBER_MAX_CHAR = 5;
         private int _age = 18;
         private int _points = 0;
-        static private int _counter = 0;
         private int _cardNumber;
 
         // Properties
@@ -35,10 +34,7 @@ namespace Fidelity_Card
             }
         }
 
-        public int Counter
-        {
-            get => _counter;
-        }
+        public static int Counter { get; set; } = 0;
 
         public string Name { get; set; }
         public string Surname { get; set; }
@@ -59,9 +55,8 @@ namespace Fidelity_Card
 
         public Card()
         {
-            _counter++;
-            Number = _counter.ToString();
-            InsertTransaction(0, DateTime.Now);
+            Counter++;
+            Number = Counter.ToString();
         }
 
         public void InsertTransaction(double amount, DateTime date)
@@ -72,7 +67,7 @@ namespace Fidelity_Card
 
         public static void EditStaticCounter(int value)
         {
-            _counter = value;
+            Counter = value;
         }
 
     }
