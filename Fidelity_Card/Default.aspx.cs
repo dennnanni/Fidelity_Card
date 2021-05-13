@@ -181,7 +181,7 @@ namespace Fidelity_Card
                 try
                 {
 
-                    ConnectionString = "Data Source = localhost;Initial Catalog = Fidelity;Integrated Security = True;Connect Timeout = 30; Encrypt = False; TrustServerCertificate = False; ApplicationIntent = ReadWrite; MultiSubnetFailover = False";
+                    ConnectionString = "Data Source = localhost;Initial Catalog = Fidelity;Integrated Security = True;";
                     using (SqlConnection connection = new SqlConnection(ConnectionString))
                         connection.Open();
 
@@ -190,7 +190,7 @@ namespace Fidelity_Card
                 {
                     try
                     {
-                        ConnectionString = "Data Source=PC1304;Initial Catalog = Fidelity;User ID=sa;Password=burbero2020;Connect Timeout=30;Encrypt=False;TrustServerCertificate=False;ApplicationIntent=ReadWrite;MultiSubnetFailover=False";
+                        ConnectionString = "Data Source = (local);Initial Catalog = Fidelity;User ID=sa;Password=burbero2020";
                         using (SqlConnection connection = new SqlConnection(ConnectionString))
                             connection.Open();
                     }
@@ -213,7 +213,13 @@ namespace Fidelity_Card
                         connection.Open();
                         ReadData(connection);
                         // Initializes the counter at the last value used (remembers the deleted values, too)
+                        
                         Card.Counter = GetIdentity(connection);
+                        if(Card.Counter == 1)
+                        {
+                            Card.Counter--;
+                        }
+
                         if (Cards.Count > 0)
                         {
                             
@@ -325,6 +331,8 @@ namespace Fidelity_Card
             // If there is another row selected, then it rebinds transactions
             if (grdMaster.SelectedIndex != -1)
                 BindTransactionData(grdMaster.SelectedIndex);
+
+            grdMaster.SelectedIndex = -1;
         }
 
         protected void grdMaster_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
@@ -356,7 +364,7 @@ namespace Fidelity_Card
                 {
                     connection.Open();
                     int i = row.DataItemIndex;
-                    if(int.Parse(Cards[i].Number) > GetIdentity(connection))
+                    if(int.Parse(Cards[i].Number) > GetIdentity(connection) || Card.Counter == 1)
                     {
                         InsertNewCard(connection, Cards[i].Name, Cards[i].Surname, Cards[i].Age, Cards[i].Address, Cards[i].City);
                         Cards[i].InsertTransaction(0, DateTime.Now);
@@ -448,6 +456,23 @@ namespace Fidelity_Card
                     ScriptManager.RegisterClientScriptBlock(this, this.GetType(), "AlertBox", $"alert('{ex.Message}');", true);
                 }
             }
+        }
+
+        private void Connection_InfoMessage(object sender, SqlInfoMessageEventArgs e)
+        {
+            string s = e.Message;
+            string idx = "";
+            bool go = true;
+            for (int i = 65; i < s.Length && go; i++)
+            {
+                if (s[i] == '\'')
+                    go = false;
+                else
+                    idx += s[i];
+
+            }
+
+            Card.Counter = int.Parse(idx);
         }
 
         protected void btnMultipleDeletion_Click(object sender, EventArgs e)
