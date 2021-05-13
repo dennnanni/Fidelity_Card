@@ -133,10 +133,6 @@ namespace Fidelity_Card
 
             while (operations.Read())
             {
-                if(int.TryParse(operations["CurrentPoints"].ToString().TrimEnd(null), out int cp))
-                {
-                    int oo = cp;
-                }
 
                 Cards[index].Transactions.Add(
                     new Transaction()

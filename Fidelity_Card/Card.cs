@@ -64,11 +64,5 @@ namespace Fidelity_Card
             _points += (int)amount;
             Transactions.Add(new Transaction(_points, date));
         }
-
-        public static void EditStaticCounter(int value)
-        {
-            Counter = value;
-        }
-
     }
 }
